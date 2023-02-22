@@ -38,6 +38,14 @@ export class UniswapishPriceError extends Error {
   }
 }
 
+export class EnergiswapishPriceError extends Error {
+  message: string;
+  constructor(message: string) {
+    super(message);
+    this.message = message;
+  }
+}
+
 export class InvalidNonceError extends Error {
   message: string;
   errorCode: number;

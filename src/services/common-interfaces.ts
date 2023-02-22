@@ -630,6 +630,14 @@ export interface Ethereumish extends BasicChainMethods, EthereumBase {
   ): Contract;
 }
 
+export interface Energiish extends BasicChainMethods, EnergiBase {
+  cancelTx(wallet: Wallet, nonce: number): Promise<Transaction>;
+  getContract(
+    tokenAddress: string,
+    signerOrProvider?: Wallet | Provider
+  ): Contract;
+}
+
 export interface Nearish extends BasicChainMethods, NearBase {
   cancelTx(account: Account, nonce: number): Promise<string>;
   getContract(tokenAddress: string, account: Account): NearContract;
