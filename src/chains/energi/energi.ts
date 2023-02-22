@@ -1,7 +1,7 @@
-import abi from '../energi/energi.abi.json';
+import abi from './energi.abi.json';
 import { logger } from '../../services/logger';
 import { BigNumber, Contract, Transaction, Wallet } from 'ethers';
-import { EnergiBase } from '../energi/energi-base';
+import { EnergiBase } from './energi-base';
 import { getEnergiConfig } from './energi.config';
 import { Provider } from '@ethersproject/abstract-provider';
 import { Energiish } from '../../services/common-interfaces';
