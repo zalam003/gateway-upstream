@@ -169,7 +169,7 @@ describe('POST /network/balances', () => {
     patchGetTokenBySymbol();
     patchGetNativeBalance();
     patchGetERC20Balance();
-    eth.getContract = jest.fn().mockReturnValue({
+    nrg.getContract = jest.fn().mockReturnValue({
       address: '0x82cFC8ea7043b5459d0A4C9dbCc4c42106C8c0A5',
     });
 
@@ -193,7 +193,7 @@ describe('POST /network/balances', () => {
     patchGetTokenBySymbol();
     patchGetNativeBalance();
     patchGetERC20Balance();
-    eth.getContract = jest.fn().mockReturnValue({
+    nrg.getContract = jest.fn().mockReturnValue({
       address: '0x82cFC8ea7043b5459d0A4C9dbCc4c42106C8c0A5',
     });
 
@@ -217,7 +217,7 @@ describe('POST /network/balances', () => {
     patchGetTokenBySymbol();
     patchGetNativeBalance();
     patchGetERC20Balance();
-    eth.getContract = jest.fn().mockReturnValue({
+    nrg.getContract = jest.fn().mockReturnValue({
       address: '0x82cFC8ea7043b5459d0A4C9dbCc4c42106C8c0A5',
     });
 
@@ -309,10 +309,10 @@ describe('POST /evm/nextNonce', () => {
 describe('POST /evm/approve', () => {
   it('approve without nonce parameter should return 200', async () => {
     patchGetWallet();
-    eth.getContract = jest.fn().mockReturnValue({
+    nrg.getContract = jest.fn().mockReturnValue({
       address: '0x82cFC8ea7043b5459d0A4C9dbCc4c42106C8c0A5',
     });
-    patch(eth.nonceManager, 'getNonce', () => 115);
+    patch(nrg.nonceManager, 'getNonce', () => 115);
     patchGetTokenBySymbol();
     patchApproveERC20();
 
@@ -332,7 +332,7 @@ describe('POST /evm/approve', () => {
 
   it('approve with nonce parameter should return 200', async () => {
     patchGetWallet();
-    patch(eth.nonceManager, 'getNonce', () => 115);
+    patch(nrg.nonceManager, 'getNonce', () => 115);
     patchGetTokenBySymbol();
     patchApproveERC20();
 
@@ -356,7 +356,7 @@ describe('POST /evm/approve', () => {
 
   it('approve with maxFeePerGas and maxPriorityFeePerGas should return 200', async () => {
     patchGetWallet();
-    patch(eth.nonceManager, 'getNonce', () => 115);
+    patch(nrg.nonceManager, 'getNonce', () => 115);
     patchGetTokenBySymbol();
     patchApproveERC20();
 
@@ -395,11 +395,11 @@ describe('POST /evm/approve', () => {
 describe('POST /evm/cancel', () => {
   it('should return 200', async () => {
     // override getWallet (network call)
-    eth.getWallet = jest.fn().mockReturnValue({
+    nrg.getWallet = jest.fn().mockReturnValue({
       address: '0x82cFC8ea7043b5459d0A4C9dbCc4c42106C8c0A5',
     });
 
-    eth.cancelTx = jest.fn().mockReturnValue({
+    nrg.cancelTx = jest.fn().mockReturnValue({
       hash: '0xf6b9e7cec507cb3763a1179ff7e2a88c6008372e3a6f297d9027a0b39b0fff77', // noqa: mock
     });
 
@@ -436,8 +436,8 @@ describe('POST /evm/cancel', () => {
 
 describe('POST /network/poll', () => {
   it('should get a NETWORK_ERROR_CODE when the network is unavailable', async () => {
-    patch(eth, 'getCurrentBlockNumber', () => {
-      const error: any = new Error('something went wrong');
+    patch(nrg, 'getCurrentBlockNumber', () => {
+      const error: any = new Error('somnrging went wrong');
       error.code = 'NETWORK_ERROR';
       throw error;
     });
@@ -455,7 +455,7 @@ describe('POST /network/poll', () => {
   });
 
   it('should get a UNKNOWN_ERROR_ERROR_CODE when an unknown error is thrown', async () => {
-    patch(eth, 'getCurrentBlockNumber', () => {
+    patch(nrg, 'getCurrentBlockNumber', () => {
       throw new Error();
     });
 
@@ -469,9 +469,9 @@ describe('POST /network/poll', () => {
   });
 
   it('should get an OUT of GAS error for failed out of gas transactions', async () => {
-    patch(eth, 'getCurrentBlockNumber', () => 1);
-    patch(eth, 'getTransaction', () => transactionOutOfGas);
-    patch(eth, 'getTransactionReceipt', () => transactionOutOfGasReceipt);
+    patch(nrg, 'getCurrentBlockNumber', () => 1);
+    patch(nrg, 'getTransaction', () => transactionOutOfGas);
+    patch(nrg, 'getTransactionReceipt', () => transactionOutOfGasReceipt);
     const res = await request(gatewayApp).post('/network/poll').send({
       chain: 'energi',
       network: 'testnet',
@@ -485,9 +485,9 @@ describe('POST /network/poll', () => {
   });
 
   it('should get a null in txReceipt for Tx in the mempool', async () => {
-    patch(eth, 'getCurrentBlockNumber', () => 1);
-    patch(eth, 'getTransaction', () => transactionOutOfGas);
-    patch(eth, 'getTransactionReceipt', () => null);
+    patch(nrg, 'getCurrentBlockNumber', () => 1);
+    patch(nrg, 'getTransaction', () => transactionOutOfGas);
+    patch(nrg, 'getTransactionReceipt', () => null);
     const res = await request(gatewayApp).post('/network/poll').send({
       chain: 'energi',
       network: 'testnet',
@@ -500,9 +500,9 @@ describe('POST /network/poll', () => {
   });
 
   it('should get a null in txReceipt and txData for Tx that didnt reach the mempool and TxReceipt is null', async () => {
-    patch(eth, 'getCurrentBlockNumber', () => 1);
-    patch(eth, 'getTransaction', () => null);
-    patch(eth, 'getTransactionReceipt', () => null);
+    patch(nrg, 'getCurrentBlockNumber', () => 1);
+    patch(nrg, 'getTransaction', () => null);
+    patch(nrg, 'getTransactionReceipt', () => null);
     const res = await request(gatewayApp).post('/network/poll').send({
       chain: 'energi',
       network: 'testnet',
@@ -515,9 +515,9 @@ describe('POST /network/poll', () => {
   });
 
   it('should get txStatus = 1 for a succesful query', async () => {
-    patch(eth, 'getCurrentBlockNumber', () => 1);
-    patch(eth, 'getTransaction', () => transactionSuccesful);
-    patch(eth, 'getTransactionReceipt', () => transactionSuccesfulReceipt);
+    patch(nrg, 'getCurrentBlockNumber', () => 1);
+    patch(nrg, 'getTransaction', () => transactionSuccesful);
+    patch(nrg, 'getTransactionReceipt', () => transactionSuccesfulReceipt);
     const res = await request(gatewayApp).post('/network/poll').send({
       chain: 'energi',
       network: 'testnet',
@@ -530,13 +530,13 @@ describe('POST /network/poll', () => {
   });
 
   it('should get an RATE_LIMIT_ERROR_CODE when the blockchain API is rate limited', async () => {
-    patch(eth, 'getCurrentBlockNumber', () => {
+    patch(nrg, 'getCurrentBlockNumber', () => {
       const error: any = new Error(
         'daily request count exceeded, request rate limited'
       );
       error.code = -32005;
       error.data = {
-        see: 'https://infura.io/docs/ethereum/jsonrpc/ratelimits',
+        see: 'https://infura.io/docs/nrgereum/jsonrpc/ratelimits',
         current_rps: 13.333,
         allowed_rps: 10.0,
         backoff_seconds: 30.0,
@@ -555,8 +555,8 @@ describe('POST /network/poll', () => {
   });
 
   it('should get unknown error', async () => {
-    patch(eth, 'getCurrentBlockNumber', () => {
-      const error: any = new Error('something went wrong');
+    patch(nrg, 'getCurrentBlockNumber', () => {
+      const error: any = new Error('somnrging went wrong');
       error.code = -32006;
       throw error;
     });
@@ -575,7 +575,7 @@ describe('POST /network/poll', () => {
 describe('overwrite existing transaction', () => {
   it('overwritten transaction is dropped', async () => {
     patchGetWallet();
-    patch(eth.nonceManager, 'getNonce', () => 115);
+    patch(nrg.nonceManager, 'getNonce', () => 115);
     patchGetTokenBySymbol();
 
     const requestParam = {
@@ -607,9 +607,9 @@ describe('overwrite existing transaction', () => {
       .expect(200);
 
     // once tx_2 is confirmed, tx_1 will be dropped
-    patch(eth, 'getCurrentBlockNumber', () => 1);
-    patch(eth, 'getTransaction', () => null);
-    patch(eth, 'getTransactionReceipt', () => null);
+    patch(nrg, 'getCurrentBlockNumber', () => 1);
+    patch(nrg, 'getTransaction', () => null);
+    patch(nrg, 'getTransactionReceipt', () => null);
     const res_1 = await request(gatewayApp).post('/network/poll').send({
       chain: 'energi',
       network: 'testnet',
@@ -619,9 +619,9 @@ describe('overwrite existing transaction', () => {
     expect(res_1.body.txReceipt).toEqual(null);
     expect(res_1.body.txData).toEqual(null);
 
-    patch(eth, 'getCurrentBlockNumber', () => 1);
-    patch(eth, 'getTransaction', () => transactionSuccesful);
-    patch(eth, 'getTransactionReceipt', () => transactionSuccesfulReceipt);
+    patch(nrg, 'getCurrentBlockNumber', () => 1);
+    patch(nrg, 'getTransaction', () => transactionSuccesful);
+    patch(nrg, 'getTransactionReceipt', () => transactionSuccesfulReceipt);
     const res_2 = await request(gatewayApp).post('/network/poll').send({
       chain: 'energi',
       network: 'testnet',
