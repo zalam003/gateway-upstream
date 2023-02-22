@@ -28,6 +28,7 @@ import { VVSConfig } from './connectors/vvs/vvs.config';
 import { AvailableNetworks } from './services/config-manager-types';
 import morgan from 'morgan';
 import { SushiswapConfig } from './connectors/sushiswap/sushiswap.config';
+import { EnergiswapConfig } from './connectors/energiswap/energiswap.config';
 import { DefikingdomsConfig } from './connectors/defikingdoms/defikingdoms.config';
 import { PancakeSwapConfig } from './connectors/pancakeswap/pancakeswap.config';
 
@@ -84,6 +85,7 @@ gatewayApp.get(
       pangolin: PangolinConfig.config.availableNetworks,
       quickswap: QuickswapConfig.config.availableNetworks,
       sushiswap: SushiswapConfig.config.availableNetworks,
+      energiswap: EnergiswapConfig.config.availableNetworks,
       openocean: OpenoceanConfig.config.availableNetworks,
       traderjoe: TraderjoeConfig.config.availableNetworks,
       defikingdoms: DefikingdomsConfig.config.availableNetworks,

@@ -40,6 +40,14 @@ import {
   Fraction as QuickswapFraction,
 } from 'quickswap-sdk';
 import {
+  Trade as EnergiswapTrade,
+  Token as EnergiToken,
+  CurrencyAmount as EnergiCurrencyAmount,
+  TradeType as EnergiTradeType,
+  Currency as EnergiCurrency,
+  Fraction as EnergiFraction,
+} from '@energi/energiswap-sdk';
+import {
   Trade as SushiswapTrade,
   Token as SushiToken,
   CurrencyAmount as SushiCurrencyAmount,
@@ -102,6 +110,7 @@ export type Tokenish =
   | TokenTraderjoe
   | UniswapCoreToken
   | SushiToken
+  | EnergiToken
   | TokenDefikingdoms
   | PancakeSwapToken
   | MMFToken
@@ -122,6 +131,7 @@ export type UniswapishTrade =
   | TradeQuickswap
   | TradeTraderjoe
   | SushiswapTrade<SushiToken, SushiToken, SushiTradeType>
+  | EnergiswapTrade<EnergiToken, EnergiToken, EnergiTradeType>
   | UniswapV3Trade<Currency, UniswapCoreToken, TradeType>
   | TradeUniswap
   | TradeDefikingdoms
@@ -145,6 +155,7 @@ export type UniswapishAmount =
   | UniswapCoreCurrencyAmount<Currency>
   | CurrencyAmountTraderjoe
   | SushiCurrencyAmount<SushiCurrency | SushiToken>
+  | EnergiCurrencyAmount<EnergiCurrency | EnergiToken>
   | CurrencyAmountDefikingdoms
   | PancakeSwapCurrencyAmount
   | CurrencyAmountMMF
@@ -156,6 +167,7 @@ export type Fractionish =
   | QuickswapFraction
   | TraderjoeFraction
   | SushiFraction
+  | EnergiFraction
   | DefikingdomsFraction
   | PancakeSwapFraction
   | FractionMMF

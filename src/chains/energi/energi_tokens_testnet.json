@@ -1,0 +1,96 @@
+{
+    "name": "CoinGecko",
+    "logoURI": "https://www.coingecko.com/assets/thumbnail-007177f3eca19695592f0b8b0eabbdae282b54154e1be912285c9034ea6cbaf2.png",
+    "keywords": [
+      "defi"
+    ],
+    "timestamp": "2023-02-22T13:34:03.578+00:00",
+    "tokens": [
+      {
+        "chainId": 49797,
+        "address": "0xBe941a19692d34D263402EE83830Ad7F21648453",
+        "name": "1inch",
+        "symbol": "1INCH",
+        "decimal": 18,
+        "logoUGI": "https://assets.coingecko.com/coins/images/13469/thumb/1inch-token.png?1608803028"
+      },
+      {
+        "chainId": 49797,
+        "address": "0x6EAdB8BA9b1054fC7D82B4129EbBEFF807852190",
+        "name": "Bitcoin",
+        "symbol": "BTC",
+        "decimal": 8,
+        "logoUGI": "https://assets.coingecko.com/coins/images/1/small/bitcoin.png?1547033579"
+      },
+      {
+        "chainId": 49797,
+        "address": "0x3e798553502042088783B83e4B62e22152E8717e",
+        "name": "Dai",
+        "symbol": "DAI",
+        "decimal": 18,
+        "logoUGI": "https://assets.coingecko.com/coins/images/9956/thumb/4943.png?1636636734"
+      },
+      {
+        "chainId": 49797,
+        "address": "0xa596fa183c87489D29A980E203EFBac32053b6C9",
+        "name": "Dogecoin",
+        "symbol": "DOGE",
+        "decimal": 18,
+        "logoUGI": "https://assets.coingecko.com/coins/images/5/small/dogecoin.png?1547792256"
+      },
+      {
+        "chainId": 49797,
+        "address": "0x01a5534f82Ab54e1F37Ee585F3049Cf8B80f79A4",
+        "name": "Ethereum",
+        "symbol": "ETH",
+        "decimal": 18,
+        "logoUGI": "https://assets.coingecko.com/coins/images/2518/thumb/weth.png?1628852295"
+      },
+      {
+        "chainId": 49797,
+        "address": "0x40C9045528f82ED73836ccB493C56B1e5383017e",
+        "name": "Shiba Inu",
+        "symbol": "SHIB",
+        "decimal": 18,
+        "logoUGI": "https://assets.coingecko.com/coins/images/11939/thumb/shiba.png?1622619446"
+      },
+      {
+        "chainId": 49797,
+        "address": "0x271268cebeB310D8B19F088aDEBF3f247910562c",
+        "name": "USD Coin",
+        "symbol": "USDC",
+        "decimal": 6,
+        "logoUGI": "https://assets.coingecko.com/coins/images/6319/thumb/USD_Coin_icon.png?1547042389"
+      },
+      {
+        "chainId": 49797,
+        "address": "0x70Db5FEE65888E91C19aBc9b5e11075c2dDa1073",
+        "name": "Energi Dollar",
+        "symbol": "USDE",
+        "decimal": 18,
+        "logoUGI": "https://assets.coingecko.com/coins/images/25463/small/USDE.png?1651830190"
+      },
+      {
+        "chainId": 49797,
+        "address": "0x184F7b12f29d675f34ff816528ADBfd0E0501Ad4",
+        "name": "Wrapped NRG",
+        "symbol": "WNRG",
+        "decimal": 18,
+        "logoUGI": "https://assets.coingecko.com/coins/images/25462/small/Energi.jpeg?1651829673"
+      },
+      {
+        "chainId": 49797,
+        "address": "0x9cEF810d3db207aF90D12f5Fa38324c285B447Fb",
+        "name": "0x",
+        "symbol": "ZRX",
+        "decimal": 18,
+        "logoUGI": "https://assets.coingecko.com/coins/images/863/thumb/0x.png?1547034672"
+      }
+     ],
+    "version": {
+      "major": 1143,
+      "minor": 1,
+      "patch": 0
+    }
+  }
+  

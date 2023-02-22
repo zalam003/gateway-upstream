@@ -1,0 +1,19 @@
+# list the energi networks available to gateway
+networks:
+  mainnet:
+    chainID: 39797
+    nodeURL: https://nodeapi.energi.network
+    tokenListType: FILE
+    nativeCurrencySymbol: NRG
+    tokenListSource: src/chains/energi/erc20_tokens_mainnet.json
+    gasPriceRefreshInterval: 60
+  testnet:
+    chainID: 49797
+    nodeURL: https://nodeapi.test.energi.network
+    tokenListType: FILE
+    tokenListSource: src/chains/energi/erc20_tokens_testnet.json  
+    nativeCurrencySymbol: NRG
+    gasPriceRefreshInterval: 60
+
+gasLimitTransaction: 3000000
+manualGasPrice: 110

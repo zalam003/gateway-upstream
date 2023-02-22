@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { asyncHandler } from '../services/error-handler';
+import { EnergiswapConfig } from './energiswap/energiswap.config';
 import { DefiraConfig } from './defira/defira.config';
 import { DefikingdomsConfig } from './defikingdoms/defikingdoms.config';
 import { MadMeerkatConfig } from './mad_meerkat/mad_meerkat.config';
@@ -22,6 +23,11 @@ export namespace ConnectorsRoutes {
     asyncHandler(async (_req, res) => {
       res.status(200).json({
         connectors: [
+          {
+            name: 'energiswap',
+            trading_type: EnergiswapConfig.config.tradingTypes,
+            available_networks: EnergiswapConfig.config.availableNetworks,
+          },
           {
             name: 'uniswap',
             trading_type: UniswapConfig.config.tradingTypes('swap'),
