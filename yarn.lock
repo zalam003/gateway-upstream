@@ -608,6 +608,18 @@
     enabled "2.0.x"
     kuler "^2.0.0"
 
+"@energi/energiswap-sdk@1.1.2":
+  version "1.1.2"
+  resolved "https://registry.yarnpkg.com/@energi/energiswap-sdk/-/energiswap-sdk-1.1.2.tgz#6706818e30087e56c8b7a65669f2d713de9b26bc"
+  integrity sha512-1OzlxUGcEJoPlZWVphA60VOfRaFdH/o1POvs9aamyfe95QCqgtprPuj8F7kJGLkfNclzCJVHQdzsfuANdjllOg==
+  dependencies:
+    big.js "^5.2.2"
+    decimal.js-light "^2.5.0"
+    jsbi "^3.1.1"
+    tiny-invariant "^1.1.0"
+    tiny-warning "^1.0.3"
+    toformat "^2.0.0"
+
 "@eslint/eslintrc@^0.4.3":
   version "0.4.3"
   resolved "https://registry.yarnpkg.com/@eslint/eslintrc/-/eslintrc-0.4.3.tgz#9e42981ef035beb3dd49add17acb96e8ff6f394c"
