@@ -1,38 +1,32 @@
-/**
- Base from sushiswap.ts
- **/
+import { percentRegexp } from '../../services/config-manager-v2';
 import { EnergiswapishPriceError } from '../../services/error-handler';
+import {
+  BigNumber,
+  Contract,
+  ContractInterface,
+  ContractTransaction,
+  Transaction,
+  Wallet,
+} from 'ethers';
+import { isFractionString } from '../../services/validators';
 import { EnergiswapConfig } from './energiswap.config';
 import routerAbi from './energiswap_router.json';
-
-import { ContractInterface } from '@ethersproject/contracts';
-
 import {
+  Fetcher,
   Percent,
   Router,
   Token,
-  CurrencyAmount,
+  TokenAmount,
   Trade,
   Pair,
-  SwapParameters,
-  TradeType,
 } from '@energi/energiswap-sdk';
-import IEnergiswapPair from '@uniswap/v2-core/build/IUniswapV2Pair.json';
-import { ExpectedTrade, Energiswapish } from '../../services/common-interfaces';
-import { Energi } from '../../chains/energi/energi';
-import {
-  BigNumber,
-  Wallet,
-  Transaction,
-  Contract,
-  ContractTransaction,
-} from 'ethers';
-import { percentRegexp } from '../../services/config-manager-v2';
 import { logger } from '../../services/logger';
+import { Energi } from '../../chains/energi/energi';
+import { ExpectedTrade, Energiswapish } from '../../services/common-interfaces';
 
 export class Energiswap implements Energiswapish {
   private static _instances: { [name: string]: Energiswap };
-  private chain: Energi;
+  private energi: Energi;
   private _router: string;
   private _routerAbi: ContractInterface;
   private _gasLimitEstimate: number;
@@ -41,18 +35,14 @@ export class Energiswap implements Energiswapish {
   private tokenList: Record<string, Token> = {};
   private _ready: boolean = false;
 
-  private constructor(chain: string, network: string) {
+  private constructor(network: string) {
     const config = EnergiswapConfig.config;
-    if (chain === 'energi') {
-      this.chain = Energi.getInstance(network);
-    } else {
-      throw new Error('unsupported chain');
-    }
-    this.chainId = this.chain.chainId;
+    this.energi = Energi.getInstance(network);
+    this.chainId = this.energi.chainId;
+    this._router = config.routerAddress(network);
     this._ttl = config.ttl;
     this._routerAbi = routerAbi.abi;
     this._gasLimitEstimate = config.gasLimitEstimate;
-    this._router = config.energiswapRouterAddress(chain, network);
   }
 
   public static getInstance(chain: string, network: string): Energiswap {
@@ -60,7 +50,7 @@ export class Energiswap implements Energiswapish {
       Energiswap._instances = {};
     }
     if (!(chain + network in Energiswap._instances)) {
-      Energiswap._instances[chain + network] = new Energiswap(chain, network);
+      Energiswap._instances[chain + network] = new Energiswap(network);
     }
 
     return Energiswap._instances[chain + network];
@@ -77,10 +67,10 @@ export class Energiswap implements Energiswapish {
   }
 
   public async init() {
-    if (!this.chain.ready()) {
-      await this.chain.init();
+    if (!this.energi.ready()) {
+      await this.energi.init();
     }
-    for (const token of this.chain.storedTokenList) {
+    for (const token of this.energi.storedTokenList) {
       this.tokenList[token.address] = new Token(
         this.chainId,
         token.address,
@@ -125,40 +115,23 @@ export class Energiswap implements Energiswapish {
   }
 
   /**
-   * Gets the allowed slippage percent from configuration.
+   * Gets the allowed slippage percent from the optional parameter or the value
+   * in the configuration.
+   *
+   * @param allowedSlippageStr (Optional) should be of the form '1/10'.
    */
-  getSlippagePercentage(): Percent {
+  public getAllowedSlippage(allowedSlippageStr?: string): Percent {
+    if (allowedSlippageStr != null && isFractionString(allowedSlippageStr)) {
+      const fractionSplit = allowedSlippageStr.split('/');
+      return new Percent(fractionSplit[0], fractionSplit[1]);
+    }
+
     const allowedSlippage = EnergiswapConfig.config.allowedSlippage;
     const nd = allowedSlippage.match(percentRegexp);
     if (nd) return new Percent(nd[1], nd[2]);
     throw new Error(
       'Encountered a malformed percent string in the config for ALLOWED_SLIPPAGE.'
     );
-  }
-
-  /**
-   * Fetches information about a pair and constructs a pair from the given two tokens.
-   * This is to replace the Fetcher Class
-   * @param baseToken  first token
-   * @param quoteToken second token
-   */
-
-  async fetchData(baseToken: Token, quoteToken: Token): Promise<Pair> {
-    const pairAddress = Pair.getAddress(baseToken, quoteToken);
-    const contract = new Contract(
-      pairAddress,
-      IEnergiswapPair.abi,
-      this.chain.provider
-    );
-    const [reserves0, reserves1] = await contract.getReserves();
-    const balances = baseToken.sortsBefore(quoteToken)
-      ? [reserves0, reserves1]
-      : [reserves1, reserves0];
-    const pair = new Pair(
-      CurrencyAmount.fromRawAmount(baseToken, balances[0]),
-      CurrencyAmount.fromRawAmount(quoteToken, balances[1])
-    );
-    return pair;
   }
 
   /**
@@ -171,79 +144,110 @@ export class Energiswap implements Energiswapish {
    * @param quoteToken Output from the transaction
    * @param amount Amount of `baseToken` to put into the transaction
    */
-
   async estimateSellTrade(
     baseToken: Token,
     quoteToken: Token,
-    amount: BigNumber
+    amount: BigNumber,
+    allowedSlippage?: string
   ): Promise<ExpectedTrade> {
-    const nativeTokenAmount: CurrencyAmount<Token> =
-      CurrencyAmount.fromRawAmount(baseToken, amount.toString());
-
+    const nativeTokenAmount: TokenAmount = new TokenAmount(
+      baseToken,
+      amount.toString()
+    );
     logger.info(
       `Fetching pair data for ${baseToken.address}-${quoteToken.address}.`
     );
-
-    const pair: Pair = await this.fetchData(baseToken, quoteToken);
-
-    const trades: Trade<Token, Token, TradeType.EXACT_INPUT>[] =
-      Trade.bestTradeExactIn([pair], nativeTokenAmount, quoteToken, {
-        maxHops: 1,
-      });
+    const pair: Pair = await Fetcher.fetchPairData(
+      baseToken,
+      quoteToken,
+      this.energi.provider
+    );
+    const trades: Trade[] = Trade.bestTradeExactIn(
+      [pair],
+      nativeTokenAmount,
+      quoteToken,
+      referrerExists,
+      doubleRefereeDiscount,
+      { maxHops: 1 },
+      [currentPairs],
+      originalAmountIn,
+      [bestTrades]
+    );
     if (!trades || trades.length === 0) {
       throw new EnergiswapishPriceError(
         `priceSwapIn: no trade pair found for ${baseToken} to ${quoteToken}.`
       );
     }
     logger.info(
-      `Best trade for ${baseToken.address}-${quoteToken.address}: ` +
-        `${trades[0].executionPrice.toFixed(6)}` +
-        `${baseToken.name}.`
+      `Best trade for ${baseToken.address}-${quoteToken.address}: ${trades[0]}`
     );
     const expectedAmount = trades[0].minimumAmountOut(
-      this.getSlippagePercentage()
+      this.getAllowedSlippage(allowedSlippage)
     );
-
     return { trade: trades[0], expectedAmount };
   }
+
+  /**
+   * Given the amount of `baseToken` desired to acquire from a transaction,
+   * calculate the amount of `quoteToken` needed for the transaction.
+   *
+   * This is typically used for calculating token buy prices.
+   *
+   * @param quoteToken Token input for the transaction
+   * @param baseToken Token output from the transaction
+   * @param amount Amount of `baseToken` desired from the transaction
+   */
   async estimateBuyTrade(
     quoteToken: Token,
     baseToken: Token,
-    amount: BigNumber
+    amount: BigNumber,
+    allowedSlippage?: string
   ): Promise<ExpectedTrade> {
-    const nativeTokenAmount: CurrencyAmount<Token> =
-      CurrencyAmount.fromRawAmount(baseToken, amount.toString());
-
-    const pair: Pair = await this.fetchData(quoteToken, baseToken);
-
-    const trades: Trade<Token, Token, TradeType.EXACT_OUTPUT>[] =
-      Trade.bestTradeExactOut([pair], quoteToken, nativeTokenAmount, {
-        maxHops: 1,
-      });
+    const nativeTokenAmount: TokenAmount = new TokenAmount(
+      baseToken,
+      amount.toString()
+    );
+    logger.info(
+      `Fetching pair data for ${quoteToken.address}-${baseToken.address}.`
+    );
+    const pair: Pair = await Fetcher.fetchPairData(
+      quoteToken,
+      baseToken,
+      this.energi.provider
+    );
+    const trades: Trade[] = Trade.bestTradeExactOut(
+      [pair],
+      quoteToken,
+      nativeTokenAmount,
+      referrerExists,
+      doubleRefereeDiscount,
+      { maxHops: 1 },
+      [currentPairs],
+      originalAmountOut,
+      [bestTrades]
+    );
     if (!trades || trades.length === 0) {
       throw new EnergiswapishPriceError(
         `priceSwapOut: no trade pair found for ${quoteToken.address} to ${baseToken.address}.`
       );
     }
     logger.info(
-      `Best trade for ${quoteToken.address}-${baseToken.address}: ` +
-        `${trades[0].executionPrice.invert().toFixed(6)} ` +
-        `${baseToken.name}.`
+      `Best trade for ${quoteToken.address}-${baseToken.address}: ${trades[0]}`
     );
 
     const expectedAmount = trades[0].maximumAmountIn(
-      this.getSlippagePercentage()
+      this.getAllowedSlippage(allowedSlippage)
     );
     return { trade: trades[0], expectedAmount };
   }
 
   /**
-   * Given a wallet and a Uniswap trade, try to execute it on blockchain.
+   * Given a wallet and a Uniswap-ish trade, try to execute it on blockchain.
    *
    * @param wallet Wallet
    * @param trade Expected trade
    * @param gasPrice Base gas price, for pre-EIP1559 transactions
-   * @param energiswapRouter Router smart contract address
+   * @param pangolinRouter smart contract address
    * @param ttl How long the swap is valid before expiry, in seconds
    * @param abi Router contract ABI
    * @param gasLimit Gas limit
@@ -251,33 +255,34 @@ export class Energiswap implements Energiswapish {
    * @param maxFeePerGas (Optional) Maximum total fee per gas you want to pay
    * @param maxPriorityFeePerGas (Optional) Maximum tip per gas you want to pay
    */
-
   async executeTrade(
     wallet: Wallet,
-    trade: Trade<Token, Token, TradeType.EXACT_INPUT | TradeType.EXACT_OUTPUT>,
+    trade: Trade,
     gasPrice: number,
-    energiswapRouter: string,
+    pangolinRouter: string,
     ttl: number,
     abi: ContractInterface,
     gasLimit: number,
     nonce?: number,
     maxFeePerGas?: BigNumber,
-    maxPriorityFeePerGas?: BigNumber
+    maxPriorityFeePerGas?: BigNumber,
+    allowedSlippage?: string
   ): Promise<Transaction> {
-    const result: SwapParameters = Router.swapCallParameters(trade, {
+    const result = Router.swapCallParameters(trade, {
       ttl,
       recipient: wallet.address,
-      allowedSlippage: this.getSlippagePercentage(),
+      allowedSlippage: this.getAllowedSlippage(allowedSlippage),
     });
-    const contract: Contract = new Contract(energiswapRouter, abi, wallet);
-    return this.chain.nonceManager.provideNonce(
+
+    const contract = new Contract(pangolinRouter, abi, wallet);
+    return this.energi.nonceManager.provideNonce(
       nonce,
       wallet.address,
       async (nextNonce) => {
         let tx: ContractTransaction;
-        if (maxFeePerGas !== undefined || maxPriorityFeePerGas !== undefined) {
+        if (maxFeePerGas || maxPriorityFeePerGas) {
           tx = await contract[result.methodName](...result.args, {
-            gasLimit: gasLimit.toFixed(0),
+            gasLimit: gasLimit,
             value: result.value,
             nonce: nextNonce,
             maxFeePerGas,

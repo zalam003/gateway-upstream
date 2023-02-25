@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import { asyncHandler } from '../services/error-handler';
-import { EnergiswapConfig } from './energiswap/energiswap.config';
 import { DefiraConfig } from './defira/defira.config';
 import { DefikingdomsConfig } from './defikingdoms/defikingdoms.config';
 import { MadMeerkatConfig } from './mad_meerkat/mad_meerkat.config';
@@ -9,6 +8,7 @@ import { PangolinConfig } from './pangolin/pangolin.config';
 import { PerpConfig } from './perp/perp.config';
 import { QuickswapConfig } from './quickswap/quickswap.config';
 import { SushiswapConfig } from './sushiswap/sushiswap.config';
+import { EnergiswapConfig } from './energiswap/energiswap.config';
 import { TraderjoeConfig } from './traderjoe/traderjoe.config';
 import { UniswapConfig } from './uniswap/uniswap.config';
 import { VVSConfig } from './vvs/vvs.config';

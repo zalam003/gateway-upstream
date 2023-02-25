@@ -4,3 +4,5 @@
 /logs
 /gateway.level
 /transactions.level
+/.yarn
+/.yarnrc

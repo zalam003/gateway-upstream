@@ -6,7 +6,7 @@ export namespace EnergiswapConfig {
     allowedSlippage: string;
     gasLimitEstimate: number;
     ttl: number;
-    energiswapRouterAddress: (chain: string, network: string) => string;
+    routerAddress: (network: string) => string;
     tradingTypes: Array<string>;
     availableNetworks: Array<AvailableNetworks>;
   }
@@ -16,23 +16,16 @@ export namespace EnergiswapConfig {
       'energiswap.allowedSlippage'
     ),
     gasLimitEstimate: ConfigManagerV2.getInstance().get(
-      'energiswap.gasLimitEstimate'
+      `energiswap.gasLimitEstimate`
     ),
     ttl: ConfigManagerV2.getInstance().get('energiswap.ttl'),
-    energiswapRouterAddress: (chain: string, network: string) =>
+    routerAddress: (network: string) =>
       ConfigManagerV2.getInstance().get(
-        'energiswap.contractAddresses.' +
-          chain +
-          '.' +
-          network +
-          '.energiswapRouterAddress'
+        'energiswap.contractAddresses.' + network + '.routerAddress'
       ),
     tradingTypes: ['EVM_AMM'],
     availableNetworks: [
-      {
-        chain: 'energi',
-        networks: ['mainnet', 'testnet'],
-      },
+      { chain: 'energi', networks: ['energi', 'testnet'] },
     ],
   };
 }
