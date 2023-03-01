@@ -153,8 +153,7 @@ export class Energi extends EnergiBase implements Energiish {
   getSpender(reqSpender: string): string {
     let spender: string;
     if (reqSpender === 'energiswap') {
-      spender = EnergiswapConfig.config.energiswapRouterAddress(
-        this.chainName,
+      spender = EnergiswapConfig.config.routerAddress(
         this._chain
       );
     } else {

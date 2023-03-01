@@ -43,8 +43,6 @@ import {
   Trade as EnergiswapTrade,
   Token as EnergiToken,
   CurrencyAmount as EnergiCurrencyAmount,
-  TradeType as EnergiTradeType,
-  Currency as EnergiCurrency,
   Fraction as EnergiFraction,
 } from '@energi/energiswap-sdk';
 import {
@@ -96,6 +94,7 @@ import {
 } from '@pancakeswap/sdk';
 import { PerpPosition } from '../connectors/perp/perp';
 import { NearBase } from '../chains/near/near.base';
+import { EnergiBase } from '../chains/energi/energi-base';
 import { Account, Contract as NearContract } from 'near-api-js';
 import { EstimateSwapView, TokenMetadata } from 'coinalpha-ref-sdk';
 import { FinalExecutionOutcome } from 'near-api-js/lib/providers';
@@ -131,7 +130,7 @@ export type UniswapishTrade =
   | TradeQuickswap
   | TradeTraderjoe
   | SushiswapTrade<SushiToken, SushiToken, SushiTradeType>
-  | EnergiswapTrade<EnergiToken, EnergiToken, EnergiTradeType>
+  | EnergiswapTrade
   | TradeUniswap
   | TradeDefikingdoms
   | DefiraTrade<UniswapCoreToken, UniswapCoreToken, TradeType>
@@ -154,7 +153,7 @@ export type UniswapishAmount =
   | UniswapCoreCurrencyAmount<Currency>
   | CurrencyAmountTraderjoe
   | SushiCurrencyAmount<SushiCurrency | SushiToken>
-  | EnergiCurrencyAmount<EnergiCurrency | EnergiToken>
+  | EnergiCurrencyAmount
   | CurrencyAmountDefikingdoms
   | PancakeSwapCurrencyAmount
   | CurrencyAmountMMF

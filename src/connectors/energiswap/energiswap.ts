@@ -19,6 +19,7 @@ import {
   TokenAmount,
   Trade,
   Pair,
+  Route,
 } from '@energi/energiswap-sdk';
 import { logger } from '../../services/logger';
 import { Energi } from '../../chains/energi/energi';
@@ -148,7 +149,8 @@ export class Energiswap implements Energiswapish {
     baseToken: Token,
     quoteToken: Token,
     amount: BigNumber,
-    allowedSlippage?: string
+    allowedSlippage?: string,
+    doubleRefereeDiscount?: boolean
   ): Promise<ExpectedTrade> {
     const nativeTokenAmount: TokenAmount = new TokenAmount(
       baseToken,
@@ -157,7 +159,7 @@ export class Energiswap implements Energiswapish {
     logger.info(
       `Fetching pair data for ${baseToken.address}-${quoteToken.address}.`
     );
-    const pair: Pair = await Fetcher.fetchPairData(
+    const pair: Pair = await Fetcher.fetchTokenData(
       baseToken,
       quoteToken,
       this.energi.provider
@@ -166,12 +168,8 @@ export class Energiswap implements Energiswapish {
       [pair],
       nativeTokenAmount,
       quoteToken,
-      referrerExists,
       doubleRefereeDiscount,
-      { maxHops: 1 },
-      [currentPairs],
-      originalAmountIn,
-      [bestTrades]
+      { maxHops: 1 }
     );
     if (!trades || trades.length === 0) {
       throw new EnergiswapishPriceError(
