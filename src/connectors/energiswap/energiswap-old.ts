@@ -1,73 +1,60 @@
+import { percentRegexp } from '../../services/config-manager-v2';
 import { EnergiswapishPriceError } from '../../services/error-handler';
+import {
+  BigNumber,
+  Contract,
+  ContractInterface,
+  ContractTransaction,
+  Transaction,
+  Wallet,
+} from 'ethers';
 import { isFractionString } from '../../services/validators';
 import { EnergiswapConfig } from './energiswap.config';
 import routerAbi from './energiswap_router.json';
 import {
-  ContractInterface,
-  ContractTransaction,
-} from '@ethersproject/contracts';
-//import { AlphaRouter } from '@uniswap/smart-order-router';
-//import { Trade, SwapRouter } from '@uniswap/router-sdk';
-//import { Trade, SwapRouter } from '@energi/energiswap-sdk';
-//import { MethodParameters } from '@energi/energiswap-sdk';
-import {
-  Trade,
+  Fetcher,
+  Percent,
   Router,
   Token,
-  CurrencyAmount,
-  Percent,
-  TradeType,
-  Currency,
+  TokenAmount,
+  Trade,
+  Pair,
+  Route,
 } from '@energi/energiswap-sdk';
-import { BigNumber, Transaction, Wallet } from 'ethers';
 import { logger } from '../../services/logger';
-import { percentRegexp } from '../../services/config-manager-v2';
 import { Energi } from '../../chains/energi/energi';
-//import { Polygon } from '../../chains/polygon/polygon';
-import { ExpectedTrade, Uniswapish } from '../../services/common-interfaces';
+import { ExpectedTrade, Energiswapish } from '../../services/common-interfaces';
 
-export class Uniswap implements Uniswapish {
-  private static _instances: { [name: string]: Uniswap };
-  //private chain: Energi | Polygon;
-  private chain: Energi;
-  //private _alphaRouter: AlphaRouter;
+export class Energiswap implements Energiswapish {
+  private static _instances: { [name: string]: Energiswap };
+  private energi: Energi;
   private _router: string;
   private _routerAbi: ContractInterface;
   private _gasLimitEstimate: number;
   private _ttl: number;
-  private _maximumHops: number;
   private chainId;
   private tokenList: Record<string, Token> = {};
   private _ready: boolean = false;
 
-  private constructor(chain: string, network: string) {
+  private constructor(network: string) {
     const config = EnergiswapConfig.config;
-    if (chain === 'energi') {
-      this.chain = Energi.getInstance(network);
-//    } else {
-//      this.chain = Polygon.getInstance(network);
-    }
-    this.chainId = this.chain.chainId;
-    this._ttl = EnergiswapConfig.config.ttl;
-    this._maximumHops = EnergiswapConfig.config.maximumHops;
-//    this._alphaRouter = new AlphaRouter({
-//      chainId: this.chainId,
-//      provider: this.chain.provider,
-//    });
+    this.energi = Energi.getInstance(network);
+    this.chainId = this.energi.chainId;
+    this._router = config.routerAddress(network);
+    this._ttl = config.ttl;
     this._routerAbi = routerAbi.abi;
-    this._gasLimitEstimate = EnergiswapConfig.config.gasLimitEstimate;
-    this._router = config.uniswapV3SmartOrderRouterAddress(network);
+    this._gasLimitEstimate = config.gasLimitEstimate;
   }
 
-  public static getInstance(chain: string, network: string): Uniswap {
-    if (Uniswap._instances === undefined) {
-      Uniswap._instances = {};
+  public static getInstance(chain: string, network: string): Energiswap {
+    if (Energiswap._instances === undefined) {
+      Energiswap._instances = {};
     }
-    if (!(chain + network in Uniswap._instances)) {
-      Uniswap._instances[chain + network] = new Uniswap(chain, network);
+    if (!(chain + network in Energiswap._instances)) {
+      Energiswap._instances[chain + network] = new Energiswap(network);
     }
 
-    return Uniswap._instances[chain + network];
+    return Energiswap._instances[chain + network];
   }
 
   /**
@@ -81,10 +68,10 @@ export class Uniswap implements Uniswapish {
   }
 
   public async init() {
-    if (!this.chain.ready()) {
-      await this.chain.init();
+    if (!this.energi.ready()) {
+      await this.energi.init();
     }
-    for (const token of this.chain.storedTokenList) {
+    for (const token of this.energi.storedTokenList) {
       this.tokenList[token.address] = new Token(
         this.chainId,
         token.address,
@@ -108,13 +95,6 @@ export class Uniswap implements Uniswapish {
   }
 
   /**
-   * AlphaRouter instance.
-   */
- // public get alphaRouter(): AlphaRouter {
- //   return this._alphaRouter;
- // }
-
-  /**
    * Router smart contract ABI.
    */
   public get routerAbi(): ContractInterface {
@@ -122,7 +102,7 @@ export class Uniswap implements Uniswapish {
   }
 
   /**
-   * Default gas limit used to estimate gasCost for swap transactions.
+   * Default gas limit for swap transactions.
    */
   public get gasLimitEstimate(): number {
     return this._gasLimitEstimate;
@@ -133,13 +113,6 @@ export class Uniswap implements Uniswapish {
    */
   public get ttl(): number {
     return this._ttl;
-  }
-
-  /**
-   * Default maximum number of hops for to go through for a swap transactions.
-   */
-  public get maximumHops(): number {
-    return this._maximumHops;
   }
 
   /**
@@ -176,39 +149,40 @@ export class Uniswap implements Uniswapish {
     baseToken: Token,
     quoteToken: Token,
     amount: BigNumber,
-    allowedSlippage?: string
+    allowedSlippage?: string,
+    doubleRefereeDiscount?: boolean
   ): Promise<ExpectedTrade> {
-    const nativeTokenAmount: CurrencyAmount<Token> =
-      CurrencyAmount.fromRawAmount(baseToken, amount.toString());
-
-    logger.info(
-      `Fetching trade data for ${baseToken.address}-${quoteToken.address}.`
+    const nativeTokenAmount: TokenAmount = new TokenAmount(
+      baseToken,
+      amount.toString()
     );
-
-    //const route = await this._alphaRouter.route(
-    //  nativeTokenAmount,
-    //  quoteToken,
-    //  TradeType.EXACT_INPUT,
-    //  undefined,
-    //  {
-    //    maxSwapsPerPath: this.maximumHops,
-    //  }
-    //);
-
-    if (!route) {
+    logger.info(
+      `Fetching pair data for ${baseToken.address}-${quoteToken.address}.`
+    );
+    const pair: Pair = await Fetcher.fetchTokenData(
+      baseToken,
+      quoteToken,
+      this.energi.provider
+    );
+    const trades: Trade[] = Trade.bestTradeExactIn(
+      [pair],
+      nativeTokenAmount,
+      quoteToken,
+      doubleRefereeDiscount,
+      { maxHops: 1 }
+    );
+    if (!trades || trades.length === 0) {
       throw new EnergiswapishPriceError(
         `priceSwapIn: no trade pair found for ${baseToken} to ${quoteToken}.`
       );
     }
     logger.info(
-      `Best trade for ${baseToken.address}-${quoteToken.address}: ` +
-        `${route.trade.executionPrice.toFixed(6)}` +
-        `${baseToken.symbol}.`
+      `Best trade for ${baseToken.address}-${quoteToken.address}: ${trades[0]}`
     );
-    const expectedAmount = route.trade.minimumAmountOut(
+    const expectedAmount = trades[0].minimumAmountOut(
       this.getAllowedSlippage(allowedSlippage)
     );
-    return { trade: route.trade, expectedAmount };
+    return { trade: trades[0], expectedAmount };
   }
 
   /**
@@ -227,46 +201,53 @@ export class Uniswap implements Uniswapish {
     amount: BigNumber,
     allowedSlippage?: string
   ): Promise<ExpectedTrade> {
-    const nativeTokenAmount: CurrencyAmount<Token> =
-      CurrencyAmount.fromRawAmount(baseToken, amount.toString());
+    const nativeTokenAmount: TokenAmount = new TokenAmount(
+      baseToken,
+      amount.toString()
+    );
     logger.info(
       `Fetching pair data for ${quoteToken.address}-${baseToken.address}.`
     );
-    //const route = await this._alphaRouter.route(
-    //  nativeTokenAmount,
-    //  quoteToken,
-    //  TradeType.EXACT_OUTPUT,
-    //  undefined,
-    //  {
-    //    maxSwapsPerPath: this.maximumHops,
-    //  }
-//);
-    if (!route) {
+    const pair: Pair = await Fetcher.fetchPairData(
+      quoteToken,
+      baseToken,
+      this.energi.provider
+    );
+    const trades: Trade[] = Trade.bestTradeExactOut(
+      [pair],
+      quoteToken,
+      nativeTokenAmount,
+      referrerExists,
+      doubleRefereeDiscount,
+      { maxHops: 1 },
+      [currentPairs],
+      originalAmountOut,
+      [bestTrades]
+    );
+    if (!trades || trades.length === 0) {
       throw new EnergiswapishPriceError(
         `priceSwapOut: no trade pair found for ${quoteToken.address} to ${baseToken.address}.`
       );
     }
     logger.info(
-      `Best trade for ${quoteToken.address}-${baseToken.address}: ` +
-        `${route.trade.executionPrice.invert().toFixed(6)} ` +
-        `${baseToken.symbol}.`
+      `Best trade for ${quoteToken.address}-${baseToken.address}: ${trades[0]}`
     );
 
-    const expectedAmount = route.trade.maximumAmountIn(
+    const expectedAmount = trades[0].maximumAmountIn(
       this.getAllowedSlippage(allowedSlippage)
     );
-    return { trade: route.trade, expectedAmount };
+    return { trade: trades[0], expectedAmount };
   }
 
   /**
-   * Given a wallet and a Uniswap trade, try to execute it on blockchain.
+   * Given a wallet and a Uniswap-ish trade, try to execute it on blockchain.
    *
    * @param wallet Wallet
    * @param trade Expected trade
    * @param gasPrice Base gas price, for pre-EIP1559 transactions
-   * @param uniswapRouter Router smart contract address
+   * @param pangolinRouter smart contract address
    * @param ttl How long the swap is valid before expiry, in seconds
-   * @param _abi Router contract ABI
+   * @param abi Router contract ABI
    * @param gasLimit Gas limit
    * @param nonce (Optional) EVM transaction nonce
    * @param maxFeePerGas (Optional) Maximum total fee per gas you want to pay
@@ -274,51 +255,46 @@ export class Uniswap implements Uniswapish {
    */
   async executeTrade(
     wallet: Wallet,
-    trade: Trade<Currency, Currency, TradeType>,
+    trade: Trade,
     gasPrice: number,
-    uniswapRouter: string,
+    pangolinRouter: string,
     ttl: number,
-    _abi: ContractInterface,
+    abi: ContractInterface,
     gasLimit: number,
     nonce?: number,
     maxFeePerGas?: BigNumber,
     maxPriorityFeePerGas?: BigNumber,
     allowedSlippage?: string
   ): Promise<Transaction> {
-    const methodParameters: MethodParameters = SwapRouter.swapCallParameters(
-      trade,
-      {
-        deadlineOrPreviousBlockhash: Math.floor(Date.now() / 1000 + ttl),
-        recipient: wallet.address,
-        slippageTolerance: this.getAllowedSlippage(allowedSlippage),
-      }
-    );
+    const result = Router.swapCallParameters(trade, {
+      ttl,
+      recipient: wallet.address,
+      allowedSlippage: this.getAllowedSlippage(allowedSlippage),
+    });
 
-    return this.chain.nonceManager.provideNonce(
+    const contract = new Contract(pangolinRouter, abi, wallet);
+    return this.energi.nonceManager.provideNonce(
       nonce,
       wallet.address,
       async (nextNonce) => {
         let tx: ContractTransaction;
-        if (maxFeePerGas !== undefined || maxPriorityFeePerGas !== undefined) {
-          tx = await wallet.sendTransaction({
-            data: methodParameters.calldata,
-            to: uniswapRouter,
-            gasLimit: gasLimit.toFixed(0),
-            value: methodParameters.value,
+        if (maxFeePerGas || maxPriorityFeePerGas) {
+          tx = await contract[result.methodName](...result.args, {
+            gasLimit: gasLimit,
+            value: result.value,
             nonce: nextNonce,
             maxFeePerGas,
             maxPriorityFeePerGas,
           });
         } else {
-          tx = await wallet.sendTransaction({
-            data: methodParameters.calldata,
-            to: this.router,
+          tx = await contract[result.methodName](...result.args, {
             gasPrice: (gasPrice * 1e9).toFixed(0),
             gasLimit: gasLimit.toFixed(0),
-            value: methodParameters.value,
+            value: result.value,
             nonce: nextNonce,
           });
         }
+
         logger.info(JSON.stringify(tx));
         return tx;
       }

@@ -2,7 +2,7 @@ import express from 'express';
 import { Express } from 'express-serve-static-core';
 import request from 'supertest';
 import { Energi } from '../../../../src/chains/energi/energi';
-import { Energiswap } from '../../../../src/connectors/energiswap/energiswap';
+import { Energiswap } from '../../../../src/connectors/energiswap/energiswap-old';
 import { AmmRoutes } from '../../../../src/amm/amm.routes';
 import { patch, unpatch } from '../../../services/patch';
 import { gasCostInEthString } from '../../../../src/services/base';

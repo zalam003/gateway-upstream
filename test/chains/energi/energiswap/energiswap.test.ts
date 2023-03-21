@@ -1,5 +1,5 @@
 jest.useFakeTimers();
-import { Energiswap } from '../../../../src/connectors/energiswap/energiswap';
+import { Energiswap } from '../../../../src/connectors/energiswap/energiswap-old';
 import { patch, unpatch } from '../../../services/patch';
 import { UniswapishPriceError as EnergiswapishPriceError } from '../../../../src/services/error-handler';
 import {
